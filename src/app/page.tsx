@@ -1,6 +1,7 @@
 'use client'
 import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
+import { supabase } from '@/lib/supabase'
 
 function useInView(threshold = 0.2) {
   const ref = useRef<HTMLDivElement>(null)
@@ -57,6 +58,7 @@ function MoreMenu() {
             ['Documents',     '/documents'],
             ['Register',      '/register'],
             ['Butcher verify','/verify'],
+            ['The device',    '/device'],
           ].map(([label, href]) => (
             <Link key={label} href={href}
               onClick={() => setOpen(false)}
@@ -81,7 +83,7 @@ const FEATURES = [
   { num:'01', title:'Real-time GPS tracking',  body:'Every animal moves — LiveStack knows where. GPS pings every 30 seconds. The moment an animal crosses your farm boundary, your phone alerts. Not tomorrow. Now.',                                                          color:'#22c55e', icon:'◉', link:'/map' },
   { num:'02', title:'AI health monitoring',    body:'Before your animal looks sick, LiveStack already knows. Movement anomaly detection flags illness 24-48 hours before visible symptoms. Claude AI explains every alert in plain English.',                             color:'#3b82f6', icon:'◈', link:'/health' },
   { num:'03', title:'Meat block system',       body:'Report a theft in one tap. Every marketplace, butcher, and checkpoint across Jamaica is instantly blocked. Stolen livestock cannot be sold. Theft stops paying.',                                                   color:'#f59e0b', icon:'◆', link:'/verify?tagId=JM-005' },
-  { num:'04', title:'Hoof NFC tagging',        body:'A waterproof NFC chip bonded under the hoof. Invisible to thieves. Butchers tap their phone to verify in one second. No app needed. Just tap.',                                                                    color:'#8b5cf6', icon:'◇', link:'/verify' },
+  { num:'04', title:'Hoof NFC tagging',        body:'A waterproof NFC chip bonded under the hoof. Invisible to thieves. Butchers tap their phone to verify in one second. No app needed. Just tap.',                                                                    color:'#8b5cf6', icon:'◇', link:'/device' },
   { num:'05', title:'RADA registration',       body:'Digital animal papers, movement permits, and sale certificates — generated automatically. No forms. No queues. LiveStack is the digital layer the 2023 Act demands.',                                              color:'#ec4899', icon:'○', link:'/documents' },
   { num:'06', title:'Verified marketplace',    body:'Only RADA-certified animals can be listed. Every sale transfers ownership on a tamper-proof ledger. Both parties get a digital certificate. No disputes. No fraud.',                                              color:'#14b8a6', icon:'◎', link:'/marketplace' },
 ]
@@ -97,7 +99,8 @@ const STEPS = [
 export default function Home() {
   const [activeFeature, setActiveFeature] = useState<number | null>(null)
   const [scrollY, setScrollY] = useState(0)
-  const [demoStatus, setDemoStatus] = useState<'idle'|'scanning'|'clear'|'blocked'>('idle')
+  const [demoStatus, setDemoStatus] = useState<'idle'|'scanning'|'clear'|'blocked'|'unreg'>('idle')
+  const [demoAnimal, setDemoAnimal] = useState<any>(null)
   const [tagInput, setTagInput] = useState('')
 
   useEffect(() => {
@@ -106,11 +109,26 @@ export default function Home() {
     return () => window.removeEventListener('scroll', onScroll)
   }, [])
 
-  function runDemo() {
+  async function runDemo() {
+    if (!tagInput.trim()) return
     setDemoStatus('scanning')
-    setTimeout(() => {
-      setDemoStatus(tagInput.toUpperCase() === 'JM-005' ? 'blocked' : 'clear')
-    }, 1500)
+    setDemoAnimal(null)
+
+    const { data } = await supabase
+      .from('animals')
+      .select('*')
+      .eq('tag_id', tagInput.trim().toUpperCase())
+      .maybeSingle()
+
+    if (!data) {
+      setDemoStatus('unreg')
+    } else if (data.status === 'blocked') {
+      setDemoStatus('blocked')
+      setDemoAnimal(data)
+    } else {
+      setDemoStatus('clear')
+      setDemoAnimal(data)
+    }
   }
 
   return (
@@ -311,7 +329,7 @@ export default function Home() {
             </h2>
             <p className="text-white/40 mb-12 max-w-lg">
               This is what a butcher sees when they tap an animal's hoof tag.
-              Try tag ID <span className="text-white font-mono">JM-005</span> to see a blocked animal.
+              Try <span className="text-white font-mono">JM-001</span> for clear, <span className="text-white font-mono">JM-005</span> for blocked, or type anything random for unregistered.
             </p>
           </FadeIn>
 
@@ -338,7 +356,7 @@ export default function Home() {
                   ) : 'Verify animal'}
                 </button>
                 <button
-                  onClick={() => { setDemoStatus('idle'); setTagInput('') }}
+                  onClick={() => { setDemoStatus('idle'); setTagInput(''); setDemoAnimal(null) }}
                   className="w-full border border-white/10 hover:border-white/20 text-white/40 hover:text-white py-3 rounded-2xl text-sm transition-colors"
                 >
                   Reset
@@ -351,12 +369,13 @@ export default function Home() {
                 demoStatus === 'idle'     ? 'bg-white/5 border border-white/10' :
                 demoStatus === 'scanning' ? 'bg-white/5 border border-white/10' :
                 demoStatus === 'clear'    ? 'bg-green-600' :
-                                            'bg-red-600'
+                demoStatus === 'blocked'  ? 'bg-red-600' :
+                                            'bg-amber-500'
               }`}>
                 {demoStatus === 'idle' && (
                   <div className="text-center">
                     <div className="text-5xl mb-4 opacity-20">📱</div>
-                    <p className="text-white/30 text-sm">Result will appear here</p>
+                    <p className="text-white/30 text-sm">Enter a tag ID and click Verify</p>
                   </div>
                 )}
                 {demoStatus === 'scanning' && (
@@ -368,15 +387,16 @@ export default function Home() {
                     <p className="text-white/60 text-sm">Checking LiveStack registry...</p>
                   </div>
                 )}
-                {demoStatus === 'clear' && (
-                  <div className="text-white text-center">
+                {demoStatus === 'clear' && demoAnimal && (
+                  <div className="text-white text-center w-full">
                     <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-4 text-3xl">✓</div>
                     <div className="text-4xl font-black mb-2">CLEAR</div>
                     <div className="text-white/70 text-sm mb-4">Safe to purchase</div>
                     <div className="bg-white/20 rounded-xl p-4 text-left text-sm space-y-1">
-                      <div className="flex justify-between"><span className="opacity-60">Tag</span><span className="font-mono">{tagInput.toUpperCase()}</span></div>
+                      <div className="flex justify-between"><span className="opacity-60">Name</span><span className="font-medium">{demoAnimal.name}</span></div>
+                      <div className="flex justify-between"><span className="opacity-60">Tag</span><span className="font-mono">{demoAnimal.tag_id}</span></div>
+                      <div className="flex justify-between"><span className="opacity-60">Breed</span><span>{demoAnimal.breed}</span></div>
                       <div className="flex justify-between"><span className="opacity-60">Status</span><span className="font-medium">RADA Verified</span></div>
-                      <div className="flex justify-between"><span className="opacity-60">Ownership</span><span>Clean transfer</span></div>
                     </div>
                   </div>
                 )}
@@ -386,8 +406,19 @@ export default function Home() {
                     <div className="text-4xl font-black mb-2">BLOCKED</div>
                     <div className="text-white/70 text-sm mb-4">Reported stolen — do not purchase</div>
                     <div className="bg-black/20 rounded-xl p-4 text-xs space-y-1 text-left">
+                      <div className="flex justify-between"><span className="opacity-60">Animal</span><span>{demoAnimal?.name}</span></div>
                       <div className="flex justify-between"><span className="opacity-60">Police case</span><span className="font-mono">JCF-2025-0441</span></div>
                       <div className="flex justify-between"><span className="opacity-60">Law</span><span>Praedial Larceny Act 2023</span></div>
+                    </div>
+                  </div>
+                )}
+                {demoStatus === 'unreg' && (
+                  <div className="text-white text-center">
+                    <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-4 text-3xl">?</div>
+                    <div className="text-4xl font-black mb-2">UNREGISTERED</div>
+                    <div className="text-white/70 text-sm mb-4">No record found</div>
+                    <div className="bg-black/20 rounded-xl p-4 text-xs text-left">
+                      <p className="opacity-70">Tag ID <span className="font-mono">{tagInput.toUpperCase()}</span> is not in the LiveStack registry. Illegal to purchase under the 2023 Act.</p>
                     </div>
                   </div>
                 )}
@@ -449,7 +480,7 @@ export default function Home() {
             <div>
               <div className="text-xs font-medium text-white/30 uppercase tracking-wider mb-3">Tools</div>
               <div className="space-y-2">
-                {[['Register animal','/register'],['Documents','/documents'],['Butcher verify','/verify'],['Sign up','/signup']].map(([l,h]) => (
+                {[['Register animal','/register'],['Documents','/documents'],['Butcher verify','/verify'],['The device','/device']].map(([l,h]) => (
                   <Link key={l} href={h} className="block text-sm text-white/40 hover:text-white transition-colors">{l}</Link>
                 ))}
               </div>
