@@ -22,16 +22,28 @@ function VerifyContent() {
   const [declared, setDeclared] = useState(false)
   const [declaring, setDeclaring] = useState(false)
   const [currentTagId, setCurrentTagId] = useState(tagId || '')
+  const [notFound, setNotFound] = useState(false)
 
   useEffect(() => {
     if (!currentTagId) { setLoading(false); return }
     setLoading(true)
+    setNotFound(false)
+    setAnimal(null)
     supabase
       .from('animals')
       .select('*')
       .eq('tag_id', currentTagId)
-      .single()
-      .then(({ data }) => { setAnimal(data); setLoading(false) })
+      .maybeSingle()
+      .then(({ data, error }) => {
+        if (data) {
+          setAnimal(data)
+          setNotFound(false)
+        } else {
+          setAnimal(null)
+          setNotFound(true)
+        }
+        setLoading(false)
+      })
   }, [currentTagId])
 
   async function searchManual() {
@@ -50,22 +62,24 @@ function VerifyContent() {
   }
 
   const status =
-    demo !== 'real' ? demo
-    : !currentTagId ? 'search'
-    : !animal ? 'unreg'
-    : animal.status === 'blocked' ? 'blocked'
-    : 'clear'
+    demo !== 'real'          ? demo :
+    !currentTagId            ? 'search' :
+    loading                  ? 'loading' :
+    notFound                 ? 'unreg' :
+    !animal                  ? 'unreg' :
+    animal.status === 'blocked' ? 'blocked' : 'clear'
 
   const themes = {
-    search:  { bg: 'bg-black',        label: '',                        sub: '' },
-    clear:   { bg: 'bg-green-600',    label: 'CLEAR',                   sub: 'Safe to purchase' },
-    blocked: { bg: 'bg-red-600',      label: 'BLOCKED',                 sub: 'Reported stolen' },
-    unreg:   { bg: 'bg-amber-500',    label: 'UNREGISTERED',            sub: 'Do not purchase' },
+    search:  { bg: 'bg-black',      label: '',              sub: '' },
+    loading: { bg: 'bg-black',      label: '',              sub: '' },
+    clear:   { bg: 'bg-green-600',  label: 'CLEAR',         sub: 'Safe to purchase' },
+    blocked: { bg: 'bg-red-600',    label: 'BLOCKED',       sub: 'Reported stolen' },
+    unreg:   { bg: 'bg-amber-500',  label: 'UNREGISTERED',  sub: 'Do not purchase' },
   }
 
   const theme = themes[status as keyof typeof themes]
 
-  if (loading) return (
+  if (status === 'loading') return (
     <div className="min-h-screen bg-black flex items-center justify-center">
       <div className="text-center">
         <div className="w-8 h-8 border-2 border-green-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
@@ -74,7 +88,7 @@ function VerifyContent() {
     </div>
   )
 
-  // Search screen — no tag yet
+  // Search screen
   if (status === 'search') {
     return (
       <div className="min-h-screen bg-black text-white flex flex-col">
@@ -91,7 +105,6 @@ function VerifyContent() {
         <div className="flex-1 flex flex-col items-center justify-center px-6">
           <div className="w-full max-w-sm">
 
-            {/* NFC instruction */}
             <div className="bg-green-500/10 border border-green-500/20 rounded-2xl p-6 mb-6 text-center">
               <div className="text-4xl mb-3">📱</div>
               <div className="font-bold text-green-400 text-lg mb-2">Tap to verify</div>
@@ -110,14 +123,12 @@ function VerifyContent() {
               </div>
             </div>
 
-            {/* Divider */}
             <div className="flex items-center gap-3 mb-6">
               <div className="flex-1 h-px bg-white/10"></div>
               <span className="text-white/30 text-xs">or enter tag manually</span>
               <div className="flex-1 h-px bg-white/10"></div>
             </div>
 
-            {/* Manual entry */}
             <div className="flex gap-2">
               <input
                 type="text"
@@ -142,16 +153,12 @@ function VerifyContent() {
           </div>
         </div>
 
-        {/* Demo toggle */}
         <div className="p-4">
           <div className="text-white/20 text-xs text-center mb-2">Demo</div>
           <div className="flex justify-center gap-2">
             {(['clear','blocked','unreg'] as const).map(s => (
-              <button
-                key={s}
-                onClick={() => setDemo(s)}
-                className="px-3 py-1.5 rounded-full text-xs border border-white/20 text-white/40 hover:text-white hover:border-white/40 transition-all"
-              >
+              <button key={s} onClick={() => setDemo(s)}
+                className="px-3 py-1.5 rounded-full text-xs border border-white/20 text-white/40 hover:text-white hover:border-white/40 transition-all">
                 {s}
               </button>
             ))}
@@ -165,7 +172,6 @@ function VerifyContent() {
   return (
     <div className={`min-h-screen ${theme.bg} flex flex-col`}>
 
-      {/* Header */}
       <div className="px-6 py-4 flex items-center justify-between">
         <a href="/" className="flex items-center gap-2 hover:opacity-70 transition-opacity">
           <div className="w-7 h-7 bg-white/20 rounded-lg flex items-center justify-center">
@@ -174,7 +180,14 @@ function VerifyContent() {
           <span className="font-bold text-sm text-white">LiveStack</span>
         </a>
         <button
-          onClick={() => { setCurrentTagId(''); setAnimal(null); setManualTag(''); setDeclared(false); setDemo('real') }}
+          onClick={() => {
+            setCurrentTagId('')
+            setAnimal(null)
+            setManualTag('')
+            setDeclared(false)
+            setNotFound(false)
+            setDemo('real')
+          }}
           className="text-white/60 hover:text-white text-sm border border-white/20 px-3 py-1.5 rounded-lg transition-colors"
         >
           Scan another
@@ -183,7 +196,6 @@ function VerifyContent() {
 
       <div className="flex-1 flex flex-col items-center justify-center px-6 text-white text-center">
 
-        {/* Status icon */}
         <div className="w-24 h-24 bg-white/20 rounded-full flex items-center justify-center mb-6 text-5xl">
           {status === 'clear' ? '✓' : status === 'blocked' ? '✗' : '?'}
         </div>
@@ -197,11 +209,11 @@ function VerifyContent() {
             <div className="bg-white/20 rounded-2xl p-5 mb-4 text-left">
               <div className="text-xs font-medium opacity-60 uppercase tracking-wider mb-3">Animal details</div>
               {[
-                ['Name', animal.name],
-                ['Tag ID', animal.tag_id],
-                ['Species', animal.species],
-                ['Breed', animal.breed],
-                ['Weight', `${animal.weight_kg}kg`],
+                ['Name',         animal.name],
+                ['Tag ID',       animal.tag_id],
+                ['Species',      animal.species],
+                ['Breed',        animal.breed],
+                ['Weight',       `${animal.weight_kg}kg`],
                 ['RADA Licence', animal.rada_licence],
                 ['Tag location', HOOF_LABELS[(animal as any).tag_location] || 'Hoof tag'],
               ].map(([k, v]) => (
@@ -211,13 +223,9 @@ function VerifyContent() {
                 </div>
               ))}
             </div>
-
             {!declared ? (
-              <button
-                onClick={declareP}
-                disabled={declaring}
-                className="w-full bg-white text-green-700 font-bold py-4 rounded-xl hover:bg-green-50 transition-colors disabled:opacity-70"
-              >
+              <button onClick={declareP} disabled={declaring}
+                className="w-full bg-white text-green-700 font-bold py-4 rounded-xl hover:bg-green-50 transition-colors disabled:opacity-70">
                 {declaring ? (
                   <span className="flex items-center justify-center gap-2">
                     <span className="w-4 h-4 border-2 border-green-700 border-t-transparent rounded-full animate-spin"></span>
@@ -250,25 +258,23 @@ function VerifyContent() {
         {status === 'unreg' && (
           <div className="bg-white/20 rounded-2xl p-6 w-full max-w-sm">
             <div className="font-bold text-lg mb-2">No registry record found</div>
-            <div className="text-sm opacity-70">
-              Tag ID: {currentTagId}<br/>
-              Illegal to purchase unregistered livestock under the 2023 Act.
+            <div className="text-sm opacity-70 leading-relaxed">
+              Tag ID: <span className="font-mono">{currentTagId}</span><br/>
+              This animal is not registered in the LiveStack registry.<br/>
+              Illegal to purchase unregistered livestock under the Praedial Larceny Prevention Act 2023.
             </div>
           </div>
         )}
       </div>
 
-      {/* Demo toggle */}
       <div className="p-4">
         <div className="flex justify-center gap-2">
           {(['real','clear','blocked','unreg'] as const).map(s => (
-            <button
-              key={s}
+            <button key={s}
               onClick={() => { setDemo(s); setDeclared(false) }}
               className={`px-3 py-1.5 rounded-full text-xs border border-white/30 transition-all ${
                 demo === s ? 'bg-white text-gray-800' : 'text-white/40 hover:text-white'
-              }`}
-            >
+              }`}>
               {s}
             </button>
           ))}
