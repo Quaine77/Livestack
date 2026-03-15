@@ -35,19 +35,12 @@ export default function Dashboard() {
   const [time, setTime] = useState(new Date())
 
   useEffect(() => {
-    if (!authLoading && !user) {
-      router.push('/login')
-    }
+    if (!authLoading && !user) router.push('/login')
   }, [user, authLoading, router])
 
   useEffect(() => {
     if (!user) return
-
-    // Load only this farmer's animals
-    supabase
-      .from('animals')
-      .select('*')
-      .order('created_at')
+    supabase.from('animals').select('*').order('created_at')
       .then(({ data }) => {
         if (data) setAnimals(data)
         setLoading(false)
@@ -129,6 +122,11 @@ export default function Dashboard() {
             <a href="/health" className="text-xs border border-white/10 hover:border-white/20 px-3 py-1.5 rounded-lg text-white/60 hover:text-white transition-all">Health</a>
             <a href="/documents" className="text-xs border border-white/10 hover:border-white/20 px-3 py-1.5 rounded-lg text-white/60 hover:text-white transition-all">Documents</a>
             <a href="/verify?tagId=JM-005" className="text-xs bg-white text-black font-medium px-3 py-1.5 rounded-lg hover:bg-white/90 transition-colors">Verify</a>
+            <a href="/profile"
+              className="flex items-center gap-1.5 text-xs border border-white/10 hover:border-white/20 px-3 py-1.5 rounded-lg text-white/60 hover:text-white transition-all">
+              <span className="text-base">👨‍🌾</span>
+              {profile?.full_name?.split(' ')[0] || 'Profile'}
+            </a>
             <button
               onClick={() => signOut()}
               className="text-xs border border-white/10 hover:border-red-500/30 px-3 py-1.5 rounded-lg text-white/40 hover:text-red-400 transition-all"
@@ -180,7 +178,7 @@ export default function Dashboard() {
           ))}
         </div>
 
-        {/* Empty state for new farmers */}
+        {/* Empty state */}
         {animals.length === 0 && (
           <div className="bg-white/5 border border-white/10 rounded-2xl p-12 text-center mb-6">
             <div className="text-5xl mb-4">🐄</div>
@@ -221,8 +219,9 @@ export default function Dashboard() {
                   className={`px-5 py-2 rounded-lg text-sm font-medium transition-all ${
                     tab === t ? 'bg-white text-black' : 'text-white/50 hover:text-white'
                   }`}>
-                  {t === 'herd' ? `Live herd${search ? ` (${filtered.length})` : ''}` :
-                   `Alerts${stats.alerts > 0 ? ` (${stats.alerts})` : ''}`}
+                  {t === 'herd'
+                    ? `Live herd${search ? ` (${filtered.length})` : ''}`
+                    : `Alerts${stats.alerts > 0 ? ` (${stats.alerts})` : ''}`}
                 </button>
               ))}
             </div>
@@ -264,9 +263,11 @@ export default function Dashboard() {
                           </td>
                           <td className="px-5 py-4 text-right">
                             {a.status !== 'blocked' && (
-                              <button onClick={e => { e.stopPropagation(); reportTheft(a) }}
+                              <button
+                                onClick={e => { e.stopPropagation(); reportTheft(a) }}
                                 disabled={reporting === a.id}
-                                className="text-xs text-red-400 hover:text-red-300 opacity-0 group-hover:opacity-100 transition-all disabled:opacity-50">
+                                className="text-xs text-red-400 hover:text-red-300 opacity-0 group-hover:opacity-100 transition-all disabled:opacity-50"
+                              >
                                 {reporting === a.id ? 'Reporting...' : 'Report stolen'}
                               </button>
                             )}
@@ -274,6 +275,7 @@ export default function Dashboard() {
                           </td>
                         </tr>
 
+                        {/* Expanded row */}
                         {selected?.id === a.id && (
                           <tr key={`${a.id}-detail`}>
                             <td colSpan={6} className="bg-white/5 border-t border-white/10 px-5 py-4">
@@ -294,6 +296,7 @@ export default function Dashboard() {
                                   <a href={`/verify?tagId=${a.tag_id}`} className="text-xs bg-green-500/10 border border-green-500/20 text-green-400 px-3 py-1.5 rounded-lg hover:bg-green-500/20">Verify</a>
                                   <a href="/health" className="text-xs bg-blue-500/10 border border-blue-500/20 text-blue-400 px-3 py-1.5 rounded-lg hover:bg-blue-500/20">Health</a>
                                   <a href="/documents" className="text-xs bg-purple-500/10 border border-purple-500/20 text-purple-400 px-3 py-1.5 rounded-lg hover:bg-purple-500/20">Papers</a>
+                                  <a href="/map" className="text-xs bg-amber-500/10 border border-amber-500/20 text-amber-400 px-3 py-1.5 rounded-lg hover:bg-amber-500/20">Map</a>
                                 </div>
                               </div>
                             </td>
