@@ -11,7 +11,6 @@ export default function SignupPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [done, setDone] = useState(false)
-  const [focused, setFocused] = useState('')
   const [showPass, setShowPass] = useState(false)
   const [showConfirm, setShowConfirm] = useState(false)
 
@@ -40,12 +39,9 @@ export default function SignupPage() {
   if (done) return (
     <div className="min-h-screen bg-black text-white flex flex-col items-center justify-center px-6">
       <div className="w-full max-w-sm text-center">
-        <div className="flex justify-center gap-4 mb-6 text-5xl">
-          <span style={{ animation: 'bounce 0.6s ease infinite alternate' }}>🐄</span>
-          <span style={{ animation: 'bounce 0.6s ease 0.2s infinite alternate' }}>🐐</span>
-          <span style={{ animation: 'bounce 0.6s ease 0.4s infinite alternate' }}>🐑</span>
+        <div className="w-16 h-16 bg-green-500/20 border border-green-500/30 rounded-full flex items-center justify-center mx-auto mb-6 text-3xl">
+          ✓
         </div>
-        <style>{`@keyframes bounce { from{transform:translateY(0)} to{transform:translateY(-12px)} }`}</style>
         <h1 className="text-2xl font-black mb-2">Check your email</h1>
         <p className="text-white/50 text-sm mb-2">We sent a confirmation link to</p>
         <p className="text-green-400 font-mono text-sm mb-6">{email}</p>
@@ -77,90 +73,17 @@ export default function SignupPage() {
 
   return (
     <div className="min-h-screen bg-black text-white flex flex-col items-center justify-center px-6">
-      <style>{`
-        @keyframes peek { from{transform:translateY(100%)} to{transform:translateY(30%)} }
-        @keyframes peekFull { from{transform:translateY(100%)} to{transform:translateY(0%)} }
-        @keyframes wobble { 0%,100%{transform:rotate(-5deg)} 50%{transform:rotate(5deg)} }
-        @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-6px)} }
-        @keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-4px)} 75%{transform:translateX(4px)} }
-      `}</style>
-
       <div className="w-full max-w-sm">
 
-        {/* Logo */}
-        <a href="/" className="flex items-center gap-2 justify-center mb-6 hover:opacity-70 transition-opacity">
+        <a href="/" className="flex items-center gap-2 justify-center mb-8 hover:opacity-70 transition-opacity">
           <div className="w-8 h-8 bg-green-500 rounded-lg flex items-center justify-center">
             <div className="w-3 h-3 bg-black rounded-full animate-pulse" />
           </div>
           <span className="font-bold text-lg">LiveStack</span>
         </a>
 
-        {/* Animal theatre */}
-        <div className="relative h-24 mb-2 overflow-hidden rounded-2xl bg-white/5 border border-white/10">
-          <div className="absolute bottom-0 left-0 right-0 h-8 bg-white/5 border-t border-white/10 flex items-center px-4 gap-1">
-            {Array.from({length: 20}).map((_, i) => (
-              <div key={i} className="w-2 h-6 bg-white/10 rounded-sm flex-shrink-0" />
-            ))}
-          </div>
-
-          {/* Cow — name/farm */}
-          <div className="absolute left-6 bottom-0" style={{
-            animation: focused === 'name' || focused === 'farm' ? 'peekFull 0.4s ease forwards' : 'peek 0.4s ease forwards',
-            transform: 'translateY(100%)'
-          }}>
-            <div className="text-4xl" style={{
-              animation: focused === 'name' || focused === 'farm' ? 'wobble 0.8s ease infinite' : 'none'
-            }}>🐄</div>
-          </div>
-
-          {/* Goat — email */}
-          <div className="absolute left-1/2 -translate-x-1/2 bottom-0" style={{
-            animation: focused === 'email' ? 'peekFull 0.4s ease forwards' : 'peek 0.4s ease forwards',
-            transform: 'translateY(100%)'
-          }}>
-            <div className="text-4xl" style={{
-              animation: focused === 'email' ? 'float 1s ease infinite' : 'none'
-            }}>🐐</div>
-          </div>
-
-          {/* Sheep — password/confirm */}
-          <div className="absolute right-6 bottom-0" style={{
-            animation: focused === 'password' || focused === 'confirm' ? 'peekFull 0.4s ease forwards' : 'peek 0.4s ease forwards',
-            transform: 'translateY(100%)'
-          }}>
-            <div style={{ fontSize: '2.25rem' }}>
-              {focused === 'confirm' && passwordsMismatch ? '😟' :
-               focused === 'confirm' && passwordsMatch ? '😊' :
-               passStrength >= 2 ? '🙈' : '🐑'}
-            </div>
-          </div>
-
-          {/* Status message */}
-          {(focused === 'password' || focused === 'confirm') && password.length > 0 && (
-            <div className={`absolute top-2 left-1/2 -translate-x-1/2 text-xs px-3 py-1 rounded-full font-medium whitespace-nowrap ${
-              focused === 'confirm' && passwordsMismatch ? 'bg-red-500/20 text-red-400' :
-              focused === 'confirm' && passwordsMatch   ? 'bg-green-500/20 text-green-400' :
-              passStrength === 1 ? 'bg-red-500/20 text-red-400' :
-              passStrength === 2 ? 'bg-amber-500/20 text-amber-400' :
-                                   'bg-green-500/20 text-green-400'
-            }`}>
-              {focused === 'confirm' && passwordsMismatch ? '😟 Passwords don\'t match!' :
-               focused === 'confirm' && passwordsMatch   ? '✓ Passwords match!' :
-               passStrength === 1 ? '🐑 That password is weak...' :
-               passStrength === 2 ? '🙈 Getting stronger!' :
-                                    '✓ Strong password!'}
-            </div>
-          )}
-
-          {!focused && (
-            <div className="absolute inset-0 flex items-center justify-center">
-              <p className="text-white/20 text-xs">The herd is watching...</p>
-            </div>
-          )}
-        </div>
-
-        <h1 className="text-2xl font-black mb-1 text-center mt-4">Join the herd</h1>
-        <p className="text-white/40 text-sm text-center mb-6">Register your farm on LiveStack</p>
+        <h1 className="text-2xl font-black mb-2 text-center">Join the herd</h1>
+        <p className="text-white/40 text-sm text-center mb-8">Register your farm on LiveStack</p>
 
         <div className="space-y-3">
 
@@ -168,9 +91,8 @@ export default function SignupPage() {
             <label className="text-xs text-white/30 uppercase tracking-wider block mb-2">Your name</label>
             <input
               type="text" value={name} onChange={e => setName(e.target.value)}
-              onFocus={() => setFocused('name')} onBlur={() => setFocused('')}
               placeholder="Full name"
-              className="w-full bg-white/5 border border-white/10 text-white placeholder-white/20 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-green-500/50 transition-colors"
+              className="w-full bg-white/5 border border-white/10 text-white placeholder-white/20 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-white/30 transition-colors"
             />
           </div>
 
@@ -178,9 +100,8 @@ export default function SignupPage() {
             <label className="text-xs text-white/30 uppercase tracking-wider block mb-2">Farm name</label>
             <input
               type="text" value={farm} onChange={e => setFarm(e.target.value)}
-              onFocus={() => setFocused('farm')} onBlur={() => setFocused('')}
               placeholder="e.g. Greenview Farm"
-              className="w-full bg-white/5 border border-white/10 text-white placeholder-white/20 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-green-500/50 transition-colors"
+              className="w-full bg-white/5 border border-white/10 text-white placeholder-white/20 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-white/30 transition-colors"
             />
           </div>
 
@@ -188,9 +109,8 @@ export default function SignupPage() {
             <label className="text-xs text-white/30 uppercase tracking-wider block mb-2">Email</label>
             <input
               type="email" value={email} onChange={e => setEmail(e.target.value)}
-              onFocus={() => setFocused('email')} onBlur={() => setFocused('')}
               placeholder="you@example.com"
-              className="w-full bg-white/5 border border-white/10 text-white placeholder-white/20 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-green-500/50 transition-colors"
+              className="w-full bg-white/5 border border-white/10 text-white placeholder-white/20 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-white/30 transition-colors"
             />
           </div>
 
@@ -200,9 +120,8 @@ export default function SignupPage() {
               <input
                 type={showPass ? 'text' : 'password'}
                 value={password} onChange={e => setPassword(e.target.value)}
-                onFocus={() => setFocused('password')} onBlur={() => setFocused('')}
                 placeholder="Min 6 characters"
-                className="w-full bg-white/5 border border-white/10 text-white placeholder-white/20 rounded-xl px-4 py-3 pr-12 text-sm focus:outline-none focus:border-green-500/50 transition-colors"
+                className="w-full bg-white/5 border border-white/10 text-white placeholder-white/20 rounded-xl px-4 py-3 pr-12 text-sm focus:outline-none focus:border-white/30 transition-colors"
               />
               <button type="button" onClick={() => setShowPass(!showPass)}
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 hover:text-white text-xs">
@@ -220,6 +139,15 @@ export default function SignupPage() {
                 ))}
               </div>
             )}
+            {password.length > 0 && (
+              <p className={`text-xs mt-1 ${
+                passStrength === 1 ? 'text-red-400' :
+                passStrength === 2 ? 'text-amber-400' : 'text-green-400'
+              }`}>
+                {passStrength === 1 ? 'Weak password' :
+                 passStrength === 2 ? 'Getting stronger' : 'Strong password'}
+              </p>
+            )}
           </div>
 
           <div>
@@ -228,12 +156,11 @@ export default function SignupPage() {
               <input
                 type={showConfirm ? 'text' : 'password'}
                 value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)}
-                onFocus={() => setFocused('confirm')} onBlur={() => setFocused('')}
                 placeholder="Re-enter your password"
                 className={`w-full bg-white/5 border text-white placeholder-white/20 rounded-xl px-4 py-3 pr-12 text-sm focus:outline-none transition-colors ${
                   passwordsMismatch ? 'border-red-500/40 focus:border-red-500/60' :
                   passwordsMatch    ? 'border-green-500/40 focus:border-green-500/60' :
-                                      'border-white/10 focus:border-green-500/50'
+                                      'border-white/10 focus:border-white/30'
                 }`}
               />
               <button type="button" onClick={() => setShowConfirm(!showConfirm)}
@@ -246,8 +173,7 @@ export default function SignupPage() {
           </div>
 
           {error && (
-            <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-3 text-sm text-red-400"
-              style={{ animation: 'shake 0.3s ease' }}>
+            <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-3 text-sm text-red-400">
               {error}
             </div>
           )}
@@ -260,7 +186,7 @@ export default function SignupPage() {
             {loading ? (
               <span className="flex items-center justify-center gap-2">
                 <span className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin" />
-                Joining the herd...
+                Creating account...
               </span>
             ) : 'Create account'}
           </button>
