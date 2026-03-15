@@ -7,13 +7,18 @@ export default function LoginPage() {
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [showPass, setShowPass] = useState(false)
 
   async function login() {
     setLoading(true)
     setError('')
     const { error } = await supabase.auth.signInWithPassword({ email, password })
     if (error) {
-      setError(error.message)
+      setError(
+        error.message === 'Email not confirmed'
+          ? 'Please confirm your email first. Check your inbox for the confirmation link.'
+          : error.message
+      )
       setLoading(false)
     } else {
       window.location.href = '/dashboard'
@@ -23,6 +28,7 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen bg-black text-white flex flex-col items-center justify-center px-6">
       <div className="w-full max-w-sm">
+
         <a href="/" className="flex items-center gap-2 justify-center mb-8 hover:opacity-70 transition-opacity">
           <div className="w-8 h-8 bg-green-500 rounded-lg flex items-center justify-center">
             <div className="w-3 h-3 bg-black rounded-full animate-pulse" />
@@ -45,21 +51,47 @@ export default function LoginPage() {
               className="w-full bg-white/5 border border-white/10 text-white placeholder-white/20 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-white/30"
             />
           </div>
+
           <div>
-            <label className="text-xs text-white/30 uppercase tracking-wider block mb-2">Password</label>
-            <input
-              type="password"
-              value={password}
-              onChange={e => setPassword(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && login()}
-              placeholder="••••••••"
-              className="w-full bg-white/5 border border-white/10 text-white placeholder-white/20 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-white/30"
-            />
+            <div className="flex items-center justify-between mb-2">
+              <label className="text-xs text-white/30 uppercase tracking-wider">Password</label>
+              <a href="/forgot-password" className="text-xs text-white/30 hover:text-green-400 transition-colors">
+                Forgot password?
+              </a>
+            </div>
+            <div className="relative">
+              <input
+                type={showPass ? 'text' : 'password'}
+                value={password}
+                onChange={e => setPassword(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && login()}
+                placeholder="••••••••"
+                className="w-full bg-white/5 border border-white/10 text-white placeholder-white/20 rounded-xl px-4 py-3 pr-12 text-sm focus:outline-none focus:border-white/30"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPass(!showPass)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 hover:text-white text-xs transition-colors"
+              >
+                {showPass ? 'hide' : 'show'}
+              </button>
+            </div>
           </div>
 
           {error && (
-            <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-3 text-sm text-red-400">
+            <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-3 text-sm text-red-400 leading-relaxed">
               {error}
+              {error.includes('confirm your email') && (
+                <button
+                  onClick={async () => {
+                    await supabase.auth.resend({ type: 'signup', email })
+                    setError('Confirmation email resent — check your inbox')
+                  }}
+                  className="block mt-2 text-xs text-green-400 hover:text-green-300 underline"
+                >
+                  Resend confirmation email
+                </button>
+              )}
             </div>
           )}
 
