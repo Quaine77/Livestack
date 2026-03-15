@@ -30,14 +30,71 @@ function FadeIn({ children, delay = 0, className = '' }: { children: React.React
   )
 }
 
+function WaveBackground() {
+  const canvasRef = useRef<HTMLCanvasElement>(null)
+  useEffect(() => {
+    const canvas = canvasRef.current
+    if (!canvas) return
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return
+    let animId: number
+    let t = 0
+
+    function resize() {
+      if (!canvas) return
+      canvas.width = window.innerWidth
+      canvas.height = window.innerHeight
+    }
+
+    function draw() {
+      if (!canvas || !ctx) return
+      ctx.clearRect(0, 0, canvas.width, canvas.height)
+
+      const waves = [
+        { color: 'rgba(34,197,94,0.07)',   speed: 0.4, amp: 90,  freq: 0.007, yPct: 0.55 },
+        { color: 'rgba(59,130,246,0.05)',  speed: 0.6, amp: 65,  freq: 0.011, yPct: 0.65 },
+        { color: 'rgba(34,197,94,0.05)',   speed: 0.3, amp: 110, freq: 0.005, yPct: 0.42 },
+        { color: 'rgba(139,92,246,0.04)',  speed: 0.7, amp: 50,  freq: 0.014, yPct: 0.72 },
+        { color: 'rgba(20,184,166,0.04)',  speed: 0.5, amp: 75,  freq: 0.009, yPct: 0.48 },
+      ]
+
+      waves.forEach(wave => {
+        ctx.beginPath()
+        ctx.moveTo(0, canvas.height)
+        for (let x = 0; x <= canvas.width; x += 3) {
+          const y =
+            canvas.height * wave.yPct
+            + Math.sin(x * wave.freq + t * wave.speed) * wave.amp
+            + Math.sin(x * wave.freq * 0.6 + t * wave.speed * 0.8) * wave.amp * 0.4
+          ctx.lineTo(x, y)
+        }
+        ctx.lineTo(canvas.width, canvas.height)
+        ctx.closePath()
+        ctx.fillStyle = wave.color
+        ctx.fill()
+      })
+
+      t += 0.016
+      animId = requestAnimationFrame(draw)
+    }
+
+    resize()
+    window.addEventListener('resize', resize)
+    draw()
+    return () => { cancelAnimationFrame(animId); window.removeEventListener('resize', resize) }
+  }, [])
+
+  return (
+    <canvas ref={canvasRef} className="absolute inset-0 w-full h-full pointer-events-none" />
+  )
+}
+
 function MoreMenu() {
   const [open, setOpen] = useState(false)
   return (
     <div className="relative">
-      <button
-        onClick={() => setOpen(!open)}
-        className="text-sm text-white/60 hover:text-white transition-colors flex items-center gap-1"
-      >
+      <button onClick={() => setOpen(!open)}
+        className="text-sm text-white/60 hover:text-white transition-colors flex items-center gap-1">
         More
         <span className="text-white/30 text-xs" style={{
           display: 'inline-block',
@@ -46,10 +103,8 @@ function MoreMenu() {
         }}>▾</span>
       </button>
       {open && (
-        <div
-          className="absolute top-8 left-0 bg-black border border-white/10 rounded-2xl p-2 min-w-48 shadow-2xl z-50"
-          onMouseLeave={() => setOpen(false)}
-        >
+        <div className="absolute top-8 left-0 bg-black border border-white/10 rounded-2xl p-2 min-w-48 shadow-2xl z-50"
+          onMouseLeave={() => setOpen(false)}>
           {[
             ['Dashboard',     '/dashboard'],
             ['Live map',      '/map'],
@@ -60,8 +115,7 @@ function MoreMenu() {
             ['Butcher verify','/verify'],
             ['The device',    '/device'],
           ].map(([label, href]) => (
-            <Link key={label} href={href}
-              onClick={() => setOpen(false)}
+            <Link key={label} href={href} onClick={() => setOpen(false)}
               className="block px-4 py-2.5 text-sm text-white/60 hover:text-white hover:bg-white/5 rounded-xl transition-colors">
               {label}
             </Link>
@@ -80,12 +134,12 @@ const STATS = [
 ]
 
 const FEATURES = [
-  { num:'01', title:'Real-time GPS tracking',  body:'Every animal moves — LiveStack knows where. GPS pings every 30 seconds. The moment an animal crosses your farm boundary, your phone alerts. Not tomorrow. Now.',                                                          color:'#22c55e', icon:'◉', link:'/map' },
-  { num:'02', title:'AI health monitoring',    body:'Before your animal looks sick, LiveStack already knows. Movement anomaly detection flags illness 24-48 hours before visible symptoms. Claude AI explains every alert in plain English.',                             color:'#3b82f6', icon:'◈', link:'/health' },
-  { num:'03', title:'Meat block system',       body:'Report a theft in one tap. Every marketplace, butcher, and checkpoint across Jamaica is instantly blocked. Stolen livestock cannot be sold. Theft stops paying.',                                                   color:'#f59e0b', icon:'◆', link:'/verify?tagId=JM-005' },
-  { num:'04', title:'Hoof NFC tagging',        body:'A waterproof NFC chip bonded under the hoof. Invisible to thieves. Butchers tap their phone to verify in one second. No app needed. Just tap.',                                                                    color:'#8b5cf6', icon:'◇', link:'/device' },
-  { num:'05', title:'RADA registration',       body:'Digital animal papers, movement permits, and sale certificates — generated automatically. No forms. No queues. LiveStack is the digital layer the 2023 Act demands.',                                              color:'#ec4899', icon:'○', link:'/documents' },
-  { num:'06', title:'Verified marketplace',    body:'Only RADA-certified animals can be listed. Every sale transfers ownership on a tamper-proof ledger. Both parties get a digital certificate. No disputes. No fraud.',                                              color:'#14b8a6', icon:'◎', link:'/marketplace' },
+  { num:'01', title:'Real-time GPS tracking',  body:'Every animal moves — LiveStack knows where. GPS pings every 30 seconds. The moment an animal crosses your farm boundary, your phone alerts. Not tomorrow. Now.',                                color:'#22c55e', icon:'◉', link:'/map' },
+  { num:'02', title:'AI health monitoring',    body:'Before your animal looks sick, LiveStack already knows. Movement anomaly detection flags illness 24-48 hours before visible symptoms. Claude AI explains every alert in plain English.',     color:'#3b82f6', icon:'◈', link:'/health' },
+  { num:'03', title:'Meat block system',       body:'Report a theft in one tap. Every marketplace, butcher, and checkpoint across Jamaica is instantly blocked. Stolen livestock cannot be sold. Theft stops paying.',                           color:'#f59e0b', icon:'◆', link:'/verify?tagId=JM-005' },
+  { num:'04', title:'Hoof NFC tagging',        body:'A waterproof NFC chip bonded under the hoof. Invisible to thieves. Butchers tap their phone to verify in one second. No app needed. Just tap.',                                            color:'#8b5cf6', icon:'◇', link:'/device' },
+  { num:'05', title:'RADA registration',       body:'Digital animal papers, movement permits, and sale certificates — generated automatically. No forms. No queues. LiveStack is the digital layer the 2023 Act demands.',                      color:'#ec4899', icon:'○', link:'/documents' },
+  { num:'06', title:'Verified marketplace',    body:'Only RADA-certified animals can be listed. Every sale transfers ownership on a tamper-proof ledger. Both parties get a digital certificate. No disputes. No fraud.',                      color:'#14b8a6', icon:'◎', link:'/marketplace' },
 ]
 
 const STEPS = [
@@ -113,22 +167,14 @@ export default function Home() {
     if (!tagInput.trim()) return
     setDemoStatus('scanning')
     setDemoAnimal(null)
-
     const { data } = await supabase
       .from('animals')
       .select('*')
       .eq('tag_id', tagInput.trim().toUpperCase())
       .maybeSingle()
-
-    if (!data) {
-      setDemoStatus('unreg')
-    } else if (data.status === 'blocked') {
-      setDemoStatus('blocked')
-      setDemoAnimal(data)
-    } else {
-      setDemoStatus('clear')
-      setDemoAnimal(data)
-    }
+    if (!data) setDemoStatus('unreg')
+    else if (data.status === 'blocked') { setDemoStatus('blocked'); setDemoAnimal(data) }
+    else { setDemoStatus('clear'); setDemoAnimal(data) }
   }
 
   return (
@@ -149,17 +195,13 @@ export default function Home() {
             </div>
             <span className="font-bold text-lg tracking-tight">LiveStack</span>
           </Link>
-
           <div className="hidden md:flex items-center gap-6">
             <a href="#features" className="text-sm text-white/60 hover:text-white transition-colors">Features</a>
             <a href="#demo" className="text-sm text-white/60 hover:text-white transition-colors">Demo</a>
             <MoreMenu />
           </div>
-
           <div className="flex items-center gap-3">
-            <Link href="/login" className="text-sm text-white/60 hover:text-white transition-colors">
-              Sign in
-            </Link>
+            <Link href="/login" className="text-sm text-white/60 hover:text-white transition-colors">Sign in</Link>
             <Link href="/signup" className="text-sm bg-green-500 hover:bg-green-400 text-black font-bold px-4 py-2 rounded-lg transition-colors">
               Get started
             </Link>
@@ -168,11 +210,8 @@ export default function Home() {
       </nav>
 
       {/* HERO */}
-      <section className="min-h-screen flex flex-col items-center justify-center px-6 pt-24 pb-16 relative">
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-green-500/5 rounded-full blur-3xl" />
-          <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-blue-500/5 rounded-full blur-3xl" />
-        </div>
+      <section className="min-h-screen flex flex-col items-center justify-center px-6 pt-24 pb-16 relative overflow-hidden">
+        <WaveBackground />
 
         <div className="text-center max-w-5xl relative z-10">
           <div className="inline-flex items-center gap-2 bg-green-500/10 border border-green-500/20 text-green-400 text-xs font-medium px-4 py-2 rounded-full mb-8">
@@ -236,7 +275,6 @@ export default function Home() {
             Six ways LiveStack protects your herd.
           </h2>
         </FadeIn>
-
         <div className="space-y-4">
           {FEATURES.map((f, i) => (
             <FadeIn key={f.num} delay={i * 0.05}>
@@ -251,31 +289,19 @@ export default function Home() {
                 <div className="flex items-center justify-between px-8 py-6">
                   <div className="flex items-center gap-6">
                     <span className="text-xs font-mono text-white/20">{f.num}</span>
-                    <span className="text-2xl" style={{ color: activeFeature === i ? f.color : 'rgba(255,255,255,0.3)' }}>
-                      {f.icon}
-                    </span>
+                    <span className="text-2xl" style={{ color: activeFeature === i ? f.color : 'rgba(255,255,255,0.3)' }}>{f.icon}</span>
                     <h3 className="font-bold text-lg text-white">{f.title}</h3>
                   </div>
-                  <span
-                    className="text-white/30 text-xl transition-transform duration-300 flex-shrink-0"
-                    style={{ transform: activeFeature === i ? 'rotate(45deg)' : 'rotate(0)' }}
-                  >
-                    +
-                  </span>
+                  <span className="text-white/30 text-xl transition-transform duration-300 flex-shrink-0"
+                    style={{ transform: activeFeature === i ? 'rotate(45deg)' : 'rotate(0)' }}>+</span>
                 </div>
-                <div style={{
-                  maxHeight: activeFeature === i ? '200px' : '0',
-                  overflow: 'hidden',
-                  transition: 'max-height 0.4s ease'
-                }}>
+                <div style={{ maxHeight: activeFeature === i ? '200px' : '0', overflow: 'hidden', transition: 'max-height 0.4s ease' }}>
                   <div className="px-8 pb-8">
                     <div className="w-8 h-0.5 mb-4" style={{ background: f.color }} />
                     <p className="text-white/60 leading-relaxed max-w-2xl">{f.body}</p>
-                    <Link
-                      href={f.link}
+                    <Link href={f.link}
                       className="inline-flex items-center gap-2 mt-4 text-sm font-medium hover:opacity-70 transition-opacity"
-                      style={{ color: f.color }}
-                    >
+                      style={{ color: f.color }}>
                       Try it now →
                     </Link>
                   </div>
@@ -296,7 +322,6 @@ export default function Home() {
               <span className="text-green-400">Every step recorded.</span>
             </h2>
           </FadeIn>
-
           <div className="relative">
             <div className="absolute top-8 left-0 right-0 h-px bg-white/10 hidden md:block" />
             <div className="grid md:grid-cols-5 gap-8">
@@ -323,13 +348,14 @@ export default function Home() {
           <FadeIn>
             <div className="text-xs font-medium text-white/30 uppercase tracking-widest mb-4">Try it now</div>
             <h2 className="text-4xl md:text-6xl font-black tracking-tight mb-4">
-              Butcher verification.
-              <br />
+              Butcher verification.<br/>
               <span className="text-green-400">Live.</span>
             </h2>
             <p className="text-white/40 mb-12 max-w-lg">
               This is what a butcher sees when they tap an animal's hoof tag.
-              Try <span className="text-white font-mono">JM-001</span> for clear, <span className="text-white font-mono">JM-005</span> for blocked, or type anything random for unregistered.
+              Try <span className="text-white font-mono">JM-001</span> for clear,{' '}
+              <span className="text-white font-mono">JM-005</span> for blocked,
+              or anything random for unregistered.
             </p>
           </FadeIn>
 
@@ -343,11 +369,8 @@ export default function Home() {
                   placeholder="Enter tag ID — e.g. JM-001"
                   className="w-full bg-white/5 border border-white/10 text-white placeholder-white/20 rounded-2xl px-6 py-4 text-sm focus:outline-none focus:border-white/30 font-mono"
                 />
-                <button
-                  onClick={runDemo}
-                  disabled={!tagInput || demoStatus === 'scanning'}
-                  className="w-full bg-green-500 hover:bg-green-400 disabled:opacity-30 text-black font-bold py-4 rounded-2xl transition-all hover:scale-105 active:scale-95"
-                >
+                <button onClick={runDemo} disabled={!tagInput || demoStatus === 'scanning'}
+                  className="w-full bg-green-500 hover:bg-green-400 disabled:opacity-30 text-black font-bold py-4 rounded-2xl transition-all hover:scale-105 active:scale-95">
                   {demoStatus === 'scanning' ? (
                     <span className="flex items-center justify-center gap-2">
                       <span className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin" />
@@ -355,10 +378,8 @@ export default function Home() {
                     </span>
                   ) : 'Verify animal'}
                 </button>
-                <button
-                  onClick={() => { setDemoStatus('idle'); setTagInput(''); setDemoAnimal(null) }}
-                  className="w-full border border-white/10 hover:border-white/20 text-white/40 hover:text-white py-3 rounded-2xl text-sm transition-colors"
-                >
+                <button onClick={() => { setDemoStatus('idle'); setTagInput(''); setDemoAnimal(null) }}
+                  className="w-full border border-white/10 hover:border-white/20 text-white/40 hover:text-white py-3 rounded-2xl text-sm transition-colors">
                   Reset
                 </button>
               </div>
@@ -506,4 +527,4 @@ export default function Home() {
       </footer>
     </div>
   )
-}317205
+}
